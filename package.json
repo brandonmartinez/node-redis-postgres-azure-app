@@ -1,0 +1,31 @@
+{
+  "name": "redis-postgres-azure-app",
+  "version": "1.0.0",
+  "description": "A small sample to test Redis and PostgreSQL connectivity in Azure.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brandonmartinez/node-redis-postgres-azure-app.git"
+  },
+  "keywords": [
+    "node",
+    "postgres",
+    "redis",
+    "azure"
+  ],
+  "author": "Brandon Martinez",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/brandonmartinez/node-redis-postgres-azure-app/issues"
+  },
+  "homepage": "https://github.com/brandonmartinez/node-redis-postgres-azure-app#readme",
+  "dependencies": {
+    "@azure/identity": "^4.0.1",
+    "express": "^4.19.2",
+    "pg": "^8.11.3",
+    "redis": "^4.6.13"
+  }
+}
