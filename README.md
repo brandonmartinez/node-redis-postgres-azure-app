@@ -41,3 +41,13 @@ password=<your-password-for-the-database> sslmode=require"
 To connect to Redis:
 
 redis-cli -h localhost -p 6379 -a <your-redis-password>
+
+### Gotchas
+
+If you are unable to bind to the ports, you may need to kill the connected processes:
+
+```sh
+killall ssh
+
+killall python3
+```
