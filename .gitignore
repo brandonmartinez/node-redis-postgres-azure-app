@@ -130,4 +130,6 @@ dist
 .pnp.*
 
 # app specific
+.logs/
+.ssh/
 .env

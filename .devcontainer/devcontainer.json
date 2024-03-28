@@ -21,6 +21,7 @@
 		5432,
 		6379
 	],
+	"postCreateCommand": "bash -i ./.devcontainer/postcreate.sh",
 	"features": {
 		"ghcr.io/devcontainers/features/azure-cli:1": {
 			"version": "latest"
