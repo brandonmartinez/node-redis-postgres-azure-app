@@ -13,13 +13,15 @@ source ./logging.sh
 source .env
 
 # Variables for Tunnels
-VM_JUMPHOST="127.0.0.1"
-LOCAL_PORT=2022
+LOCAL_BASTION_SSH_TUNNEL_ADDRESS="127.0.0.1"
+LOCAL_BASTION_SSH_TUNNEL_PORT=2022
 POSTGRESS_PORT=5432
 REDIS_PORT=6380
 CURRENT_DIR=$(dirname "$0")
-SSH_PRIVATE_KEY_PATH="$CURRENT_DIR/.ssh/$SSH_KEY_NAME"
+SSH_DIR="$CURRENT_DIR/.ssh"
+SSH_PRIVATE_KEY_PATH="$SSH_DIR/$SSH_KEY_NAME"
 SSH_PUBLIC_KEY_PATH="$SSH_PRIVATE_KEY_PATH.pub"
+SSH_COMPLETE_FILE="$SSH_DIR/transfer_complete"
 
 set +a
 
@@ -41,31 +43,37 @@ az configure --defaults location="$AZURE_LOCATION" group="$AZURE_RESOURCEGROUP"
 section "Connecting to Azure Bastion"
 
 info "Connecting to Jumpbox via SSH through Bastion $AZURE_BASTION_NAME in a background process"
-$(az network bastion tunnel --name "$AZURE_BASTION_NAME" --resource-port 22 --port $LOCAL_PORT --target-resource-id "/subscriptions/$AZURE_SUBSCRIPTIONID/resourceGroups/$AZURE_RESOURCEGROUP/providers/Microsoft.Compute/virtualMachines/$AZURE_JUMPBOX_NAME") &
+$(az network bastion tunnel --name "$AZURE_BASTION_NAME" --resource-port 22 --port $LOCAL_BASTION_SSH_TUNNEL_PORT --target-resource-id "/subscriptions/$AZURE_SUBSCRIPTIONID/resourceGroups/$AZURE_RESOURCEGROUP/providers/Microsoft.Compute/virtualMachines/$AZURE_JUMPBOX_NAME") &
 
 info "Sleeping to allow for Bastion tunnel to be established (ignore AZ ctrl+c warning)"
 sleep 15
 
 # Setting up SSH keys
 ##################################################
-if [ "$SKIP_KEY_GENERATION" = false ]; then
-    section "SSH Key Configuration"
+section "SSH Key Configuration"
 
+if [ ! -f "$SSH_COMPLETE_FILE" ]; then
     if [ ! -f "$SSH_PRIVATE_KEY_PATH" ]; then
         info "Generating SSH keys"
-        ssh-keygen -t rsa -b 4096 -C "$JUMPBOX_USERNAME@$VM_JUMPHOST" -f $SSH_PRIVATE_KEY_PATH -N ""
+        ssh-keygen -t rsa -b 4096 -C "$AZURE_JUMPBOX_USERNAME@$LOCAL_BASTION_SSH_TUNNEL_ADDRESS" -f $SSH_PRIVATE_KEY_PATH -N ""
     fi
 
     info "Sending to Jumpbox"
-    ssh-copy-id -p $LOCAL_PORT -i $SSH_PUBLIC_KEY_PATH $JUMPBOX_USERNAME@127.0.0.1
+    ssh-copy-id -p $LOCAL_BASTION_SSH_TUNNEL_PORT -i $SSH_PUBLIC_KEY_PATH $AZURE_JUMPBOX_USERNAME@127.0.0.1
+else
+    info "SSH keys have already been sent to Jumpbox; skipping."
 fi
 
 # Create tunnels to resources
 ##################################################
 section "Creating Tunnels"
 
-info "Creating local ports to Postgres server $POSTGRES_SERVER and Redis server $REDIS_SERVER"
-$(ssh -o ExitOnForwardFailure=yes -4 -i $SSH_PRIVATE_KEY_PATH -p $LOCAL_PORT -L $POSTGRESS_PORT:$POSTGRES_SERVER:$POSTGRESS_PORT -L $REDIS_PORT:$REDIS_SERVER:$REDIS_PORT -N $VM_JUMPHOST -l $JUMPBOX_USERNAME) &
+info "Creating local ports to Postgres server $AZURE_POSTGRES_SERVER and Redis server $AZURE_REDIS_SERVER"
+$(ssh -o ExitOnForwardFailure=yes -4 -i $SSH_PRIVATE_KEY_PATH \
+    -L $POSTGRESS_PORT:$AZURE_POSTGRES_SERVER:$POSTGRESS_PORT \
+    -L $REDIS_PORT:$AZURE_REDIS_SERVER:$REDIS_PORT \
+    -N \
+    $LOCAL_BASTION_SSH_TUNNEL_ADDRESS -p $LOCAL_BASTION_SSH_TUNNEL_PORT  -l $AZURE_JUMPBOX_USERNAME) &
 
 info "Tunnels are now connected. Open a new terminal to use the connections."
 warn "Press Ctrl+C in this terminal to close the tunnels and exit."

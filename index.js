@@ -1,36 +1,59 @@
-const redis = require("redis");
+// Imports
+//////////////////////////////////////////////////
+import redis from "redis";
 import {
   DefaultAzureCredential,
   ClientSecretCredential,
 } from "@azure/identity";
-const { Client } = require("pg");
+import pg from "pg";
+import express from "express";
 
+// Shared Variables
+//////////////////////////////////////////////////
+const useManagedIdentities = process.env.USE_MANAGED_IDENTITIES === "true";
+
+const { Client } = pg;
+
+// If not using managed identities, will default to the current AZ CLI logged in user (for local dev)
 const clientId = process.env.POSTGRES_USER_MANAGED_IDENTITY_CLIENTID;
-const credential = new DefaultAzureCredential({
-  managedIdentityClientId: clientId,
-});
+const credentialsConfiguration = useManagedIdentities
+  ? {
+      managedIdentityClientId: clientId,
+    }
+  : {};
+const credential = new DefaultAzureCredential(credentialsConfiguration);
 
 // Acquire the access token.
 var accessToken = await credential.getToken(
   "https://ossrdbms-aad.database.windows.net/.default"
 );
 
+console.log(accessToken.token);
+
 // Use the token and the connection information from the environment variables added by Service Connector to establish the connection.
 (async () => {
   const client = new Client({
-    host: process.env.AZURE_POSTGRESQL_HOST,
-    user: process.env.AZURE_POSTGRESQL_USER,
+    host: process.env.POSTGRES_SERVER,
+    // If using managed identities, the user should be the username of the managed identity, otherwise grab the useremail from the environment variables
+    user: useManagedIdentities
+      ? process.env.POSTGRES_USER_MANAGED_IDENTITY_USERNAME
+      : process.env.ENTRA_USER_EMAIL,
     password: accessToken.token,
-    database: process.env.AZURE_POSTGRESQL_DATABASE,
-    port: Number(process.env.AZURE_POSTGRESQL_PORT),
-    ssl: process.env.AZURE_POSTGRESQL_SSL,
+    database: process.env.POSTGRES_DATABASE_NAME,
+    port: Number(process.env.POSTGRESQL_PORT),
+    ssl: {
+      rejectUnauthorized: true,
+      checkServerIdentity: () => {},
+    },
   });
   await client.connect();
-
+  const res = await client.query("SELECT $1::text as message", [
+    "Hello world!",
+  ]);
+  console.log(res.rows[0].message); // Hello world!
   await client.end();
 })();
 
-const express = require("express");
 const app = express();
 const port = process.env.NODE_EXPRESS_PORT || 3000;
 
