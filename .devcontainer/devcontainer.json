@@ -11,7 +11,8 @@
 				"esbenp.prettier-vscode",
 				"GitHub.copilot",
 				"yzhang.markdown-all-in-one",
-				"rvest.vs-code-prettier-eslint"
+				"rvest.vs-code-prettier-eslint",
+				"github.vscode-github-actions"
 			]
 		}
 	},
