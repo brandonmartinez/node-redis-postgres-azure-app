@@ -127,6 +127,7 @@ app.get("/api/dataentries", async (req, res, next) => {
   try {
     const query = "SELECT * FROM dataentries";
     const response = await executePostgresQuery(query);
+
     if (response && response.rows) {
       res.status(200).json(response.rows);
     } else {
