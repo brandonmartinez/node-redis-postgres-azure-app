@@ -6,7 +6,7 @@
 <body>
     <h1>Data Entry Form</h1>
 
-    <form id="dataForm" action="/api/dataentry" method="POST">
+    <form id="dataForm" action="/api/dataentries" method="POST">
         <label for="dataInput">Enter Data:</label>
         <input type="text" id="dataInput" name="dataInput" required>
         <button type="submit">Submit</button>
@@ -19,6 +19,7 @@
             <tr>
                 <th>ID</th>
                 <th>Data Value</th>
+                <th>Created At</th>
             </tr>
         </thead>
         <tbody>
@@ -35,12 +36,12 @@
             var dataValue = document.getElementById("dataInput").value;
 
             // Send a POST request to the server to save the data
-            fetch("/api/dataentry", {
+            fetch("/api/dataentries", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({ dataValue: dataValue })
+                body: JSON.stringify({ text: dataValue })
             })
             .then(response => response.json())
             .then(data => {
@@ -57,7 +58,7 @@
 
         // Function to update the table with the retrieved data
         function updateTable() {
-            fetch("/api/dataretrieval")
+            fetch("/api/dataentries")
             .then(response => response.json())
             .then(data => {
                 var tableBody = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
@@ -67,7 +68,8 @@
                 data.forEach(function(row) {
                     var newRow = tableBody.insertRow();
                     newRow.insertCell().textContent = row.id;
-                    newRow.insertCell().textContent = row.dataValue;
+                    newRow.insertCell().textContent = row.text;
+                    newRow.insertCell().textContent = row.created_at;
                 });
             })
             .catch(error => {
