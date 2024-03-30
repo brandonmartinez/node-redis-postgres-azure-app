@@ -1,12 +1,10 @@
 // Imports
 //////////////////////////////////////////////////
 import redis from "redis";
-import {
-  DefaultAzureCredential,
-  ClientSecretCredential,
-} from "@azure/identity";
+import { DefaultAzureCredential } from "@azure/identity";
 import pg from "pg";
 import express from "express";
+import path from "path";
 
 // Shared Variables
 //////////////////////////////////////////////////
@@ -47,10 +45,7 @@ console.log(accessToken.token);
     },
   });
   await client.connect();
-  const res = await client.query("SELECT $1::text as message", [
-    "Hello world!",
-  ]);
-  console.log(res.rows[0].message); // Hello world!
+
   await client.end();
 })();
 
@@ -62,5 +57,5 @@ app.listen(port, () => {
 });
 
 app.get("/", (req, res, next) => {
-  res.json(["Tony", "Lisa", "Michael", "Ginger", "Food"]);
+  res.sendFile(process.cwd() + "/public/index.html");
 });

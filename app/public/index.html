@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Data Entry Form</title>
+</head>
+<body>
+    <h1>Data Entry Form</h1>
+
+    <form id="dataForm" action="/api/dataentry" method="POST">
+        <label for="dataInput">Enter Data:</label>
+        <input type="text" id="dataInput" name="dataInput" required>
+        <button type="submit">Submit</button>
+    </form>
+
+    <h2>Data Table</h2>
+
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Data Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Table rows will be dynamically populated using JavaScript -->
+        </tbody>
+    </table>
+
+    <script>
+        // JavaScript code to update the table after form submission
+        document.getElementById("dataForm").addEventListener("submit", function(event) {
+            event.preventDefault();
+
+            // Get the entered data value
+            var dataValue = document.getElementById("dataInput").value;
+
+            // Send a POST request to the server to save the data
+            fetch("/api/dataentry", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ dataValue: dataValue })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Clear the form input
+                document.getElementById("dataInput").value = "";
+
+                // Update the table with the retrieved data
+                updateTable();
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        });
+
+        // Function to update the table with the retrieved data
+        function updateTable() {
+            fetch("/api/dataretrieval")
+            .then(response => response.json())
+            .then(data => {
+                var tableBody = document.getElementById("dataTable").getElementsByTagName("tbody")[0];
+                tableBody.innerHTML = ""; // Clear existing table rows
+
+                // Add new table rows with the retrieved data
+                data.forEach(function(row) {
+                    var newRow = tableBody.insertRow();
+                    newRow.insertCell().textContent = row.id;
+                    newRow.insertCell().textContent = row.dataValue;
+                });
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        }
+
+        // Initial table update
+        updateTable();
+    </script>
+</body>
+</html>

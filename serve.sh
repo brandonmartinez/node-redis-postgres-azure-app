@@ -26,4 +26,5 @@ set +a
 ##################################################
 section "Launching the app"
 
+cd app
 node index.js
