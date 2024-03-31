@@ -60,6 +60,9 @@ if [ ! -f "$SSH_COMPLETE_FILE" ]; then
 
     info "Sending to Jumpbox"
     ssh-copy-id -p $LOCAL_BASTION_SSH_TUNNEL_PORT -i $SSH_PUBLIC_KEY_PATH $AZURE_JUMPBOX_USERNAME@127.0.0.1
+
+    debug "Touch $SSH_COMPLETE_FILE to skip the process next run"
+    touch $SSH_COMPLETE_FILE
 else
     info "SSH keys have already been sent to Jumpbox; skipping."
 fi

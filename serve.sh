@@ -16,8 +16,9 @@ source .env
 
 if [[ "$USE_MANAGED_IDENTITIES" == "false" ]]; then
     info "Capturing current user entra details for deployment"
-    output=$(az ad signed-in-user show --query "{user: userPrincipalName}")
+    output=$(az ad signed-in-user show --query "{user: userPrincipalName, objectId: id}")
     ENTRA_USER_EMAIL=$(echo "$output" | jq -r '.user')
+    ENTRA_USER_OBJECTID=$(echo "$output" | jq -r '.objectId')
 fi
 
 set +a

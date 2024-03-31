@@ -44,10 +44,26 @@ redis-cli -h localhost -p 6379 -a <your-redis-password>
 
 ### Gotchas
 
-If you are unable to bind to the ports, you may need to kill the connected processes:
+If you are unable to bind to the ports, you may need to kill the connected
+processes:
 
 ```sh
 killall ssh
 
 killall python3
+```
+
+## Running in Azure
+
+When the image is deployed…
+
+### Postgres Notes
+
+The managed identity may need to have permissions assigned to it in order to
+access the data within the database. To do this, login as the non-Entra
+administrator (or an administrator that has had privileges assigned to them) and
+run the following SQL query:
+
+```sql
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "YOUR_MANAGED_IDENTITY_NAME"
 ```

@@ -1,92 +1,51 @@
 // Imports
 //////////////////////////////////////////////////
-import redis from "redis";
-import {
-  DefaultAzureCredential,
-  ManagedIdentityCredential,
-  AzureCliCredential,
-} from "@azure/identity";
-import pg from "pg";
+import IdentityService from "./services/IdentityService.js";
+import RedisService from "./services/RedisService.js";
+import PostgresService from "./services/PostgresService.js";
 import express from "express";
 
-// needed for commonjs modules
-const { Client } = pg;
-
-// Shared Variables
+// Environment Variables
 //////////////////////////////////////////////////
 const expressPort = process.env.NODE_EXPRESS_PORT || 3000;
 const useManagedIdentities = process.env.USE_MANAGED_IDENTITIES === "true";
-const managedIdentityUserName =
-  process.env.POSTGRES_USER_MANAGED_IDENTITY_USERNAME;
-const postgresUserName = useManagedIdentities
-  ? managedIdentityUserName
-  : process.env.ENTRA_USER_EMAIL;
-const postgresDatabaseName = process.env.POSTGRES_DATABASE_NAME;
-const postgresPort = Number(process.env.POSTGRESQL_PORT);
-// If running in a local environment, accept the
-// SSL cert since it won't match "localhost"
-const postgresSslConfig = useManagedIdentities
-  ? true
-  : {
-      rejectUnauthorized: true,
-      checkServerIdentity: () => {},
-    };
 
-// If not using managed identities, defaulting to using the Azure CLI's
-// current user credentials (requires az login to have been done)
-const credential = useManagedIdentities
-  ? new ManagedIdentityCredential({
-      clientId: process.env.POSTGRES_USER_MANAGED_IDENTITY_CLIENTID,
-    })
-  : new AzureCliCredential();
-
-// Shared Functions
+// Service Setup
 //////////////////////////////////////////////////
+const postgresIdentityService = new IdentityService({
+  useManagedIdentities,
+  clientId: process.env.POSTGRES_USER_MANAGED_IDENTITY_CLIENTID,
+  scope: "https://ossrdbms-aad.database.windows.net/.default",
+});
+const postgresService = new PostgresService({
+  identityService: postgresIdentityService,
+  host: process.env.POSTGRES_SERVER,
+  databaseName: process.env.POSTGRES_DATABASE_NAME,
+  port: Number(process.env.POSTGRES_SERVER_PORT),
+  username: useManagedIdentities
+    ? process.env.POSTGRES_USER_MANAGED_IDENTITY_USERNAME
+    : process.env.ENTRA_USER_EMAIL,
+});
 
-const executePostgresQuery = async (query) => {
-  // Acquire the access token.
-  var accessToken = await credential.getToken(
-    "https://ossrdbms-aad.database.windows.net/.default"
-  );
+const redisIdentityService = new IdentityService({
+  useManagedIdentities,
+  scope: "https://redis.azure.com/.default",
+});
 
-  // console.debug("Access Token acquired: ", accessToken.token);
-
-  // Note: this is not best practice for high-scale applications, consider using a connection pool
-  // like PgBouncer: https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/concepts-connection-pooling-best-practices
-  const client = new Client({
-    host: process.env.POSTGRES_SERVER,
-    // If using managed identities, the user should be the username of the managed identity, otherwise grab the useremail from the environment variables
-    user: postgresUserName,
-    password: accessToken.token,
-    database: postgresDatabaseName,
-    port: postgresPort,
-    ssl: postgresSslConfig,
-  });
-  await client.connect();
-
-  let returnValue;
-  if (Array.isArray(query)) {
-    const results = [];
-    for (const q of query) {
-      const result = await client.query(q);
-      results.push(result);
-    }
-    returnValue = results;
-  } else {
-    returnValue = await client.query(query);
-  }
-
-  await client.end();
-
-  return returnValue;
-};
+const redisService = new RedisService({
+  identityService: redisIdentityService,
+  host: process.env.REDIS_SERVER,
+  port: Number(process.env.REDIS_SERVER_PORT),
+  username: useManagedIdentities
+    ? process.env.REDIS_USER_MANAGED_IDENTITY_USERNAME
+    : process.env.ENTRA_USER_OBJECTID,
+});
 
 // Ensure the database has the tables created
 //////////////////////////////////////////////////
 const createTables = async () => {
-  const response = await executePostgresQuery([
+  const response = await postgresService.executeQuery([
     `CREATE TABLE IF NOT EXISTS dataentries (id SERIAL PRIMARY KEY, text VARCHAR(1024) not null, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
-    `GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "${managedIdentityUserName}"`,
   ]);
 
   console.log(response);
@@ -114,8 +73,15 @@ app.post("/api/dataentries", async (req, res, next) => {
     console.debug(req.body);
 
     const { text } = req.body;
-    const query = `INSERT INTO dataentries (text) VALUES ('${text}')`;
-    const response = await executePostgresQuery(query);
+
+    // Insert data to Postgres
+    const query = `INSERT INTO dataentries (text) VALUES ('${text}') RETURNING id`;
+    const response = await postgresService.executeQuery(query);
+    console.log(response);
+
+    // update in cache
+    await redisService.set(`dataentries-${response.rows[0].id}`, text);
+
     res.status(200).json(response);
   } catch (error) {
     console.error(error);
@@ -126,13 +92,25 @@ app.post("/api/dataentries", async (req, res, next) => {
 app.get("/api/dataentries", async (req, res, next) => {
   try {
     const query = "SELECT * FROM dataentries";
-    const response = await executePostgresQuery(query);
+    const response = await postgresService.executeQuery(query);
 
     if (response && response.rows) {
       res.status(200).json(response.rows);
     } else {
       res.status(200).json([]);
     }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/api/cache/:id", async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const response = await redisService.get(`dataentries-${id}`);
+
+    res.status(200).json(response);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Internal Server Error" });
