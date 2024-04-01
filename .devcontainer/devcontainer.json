@@ -27,6 +27,12 @@
 		"ghcr.io/devcontainers/features/azure-cli:1": {
 			"version": "latest"
 		},
-		"ghcr.io/stuartleeks/dev-container-features/azure-cli-persistence:0": {}
+		"ghcr.io/stuartleeks/dev-container-features/azure-cli-persistence:0": {},
+		"ghcr.io/itsmechlark/features/redis-server:1": {
+			"version": "latest"
+		},
+		"ghcr.io/robbert229/devcontainer-features/postgresql-client:1": {
+			"version": "15"
+		}
 	}
 }
