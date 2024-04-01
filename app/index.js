@@ -41,6 +41,7 @@ const postgresService = new PostgresService({
 
 const redisIdentityService = new IdentityService({
   useManagedIdentities,
+  clientId: process.env.REDIS_USER_MANAGED_IDENTITY_CLIENTID,
   scope: "https://redis.azure.com/.default",
 });
 

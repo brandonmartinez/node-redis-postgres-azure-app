@@ -32,7 +32,7 @@ class PostgresService {
       ssl: true,
     };
 
-    // console.debug("postgres config", clientConfig);
+    console.debug("postgres config", clientConfig);
 
     // Note: this is not best practice for high-scale applications, consider using a connection pool
     // like PgBouncer: https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/concepts-connection-pooling-best-practices
