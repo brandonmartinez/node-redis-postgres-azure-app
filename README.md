@@ -65,7 +65,9 @@ administrator (or an administrator that has had privileges assigned to them) and
 run the following SQL query:
 
 ```sql
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "YOUR_MANAGED_IDENTITY_NAME";
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "YOUR_MANAGED_IDENTITY_NAME";
+GRANT azure_pg_admin TO "YOUR_MANAGED_IDENTITY_NAME";
 GRANT ALL ON SCHEMA public TO "YOUR_MANAGED_IDENTITY_NAME";
 ```
+
+More information:
+[Create users in Azure Database for PostgreSQL - Flexible Server](https://learn.microsoft.com/en-us/azure/postgresql/flexible-server/how-to-create-users)
