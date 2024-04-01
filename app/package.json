@@ -25,6 +25,8 @@
   "homepage": "https://github.com/brandonmartinez/node-redis-postgres-azure-app#readme",
   "dependencies": {
     "@azure/identity": "^4.0.1",
+    "applicationinsights": "^2.9.5",
+    "applicationinsights-native-metrics": "^0.0.10",
     "express": "^4.19.2",
     "pg": "^8.11.3",
     "redis": "^4.6.13"

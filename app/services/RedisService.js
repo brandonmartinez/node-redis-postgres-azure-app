@@ -63,6 +63,14 @@ class RedisService {
   async get(key) {
     return await this.executeRedisCommand((client) => client.get(key));
   }
+
+  async keys() {
+    return await this.executeRedisCommand((client) => client.keys("*"));
+  }
+
+  async mget(keys) {
+    return await this.executeRedisCommand((client) => client.mGet(keys));
+  }
 }
 
 // Exports
