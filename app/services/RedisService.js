@@ -31,7 +31,8 @@ class RedisService {
         keepAlive: 0,
       },
     };
-    console.debug("redis config", clientConfig);
+
+    // console.debug("redis config", clientConfig);
 
     // Note: this may not be the most efficient way to connect to Redis; you may
     // want to cache the client and reuse it, or use a connection pool of sorts.

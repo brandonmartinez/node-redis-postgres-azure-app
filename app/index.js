@@ -5,6 +5,7 @@ import RedisService from "./services/RedisService.js";
 import PostgresService from "./services/PostgresService.js";
 import express from "express";
 import applicationinsights from "applicationinsights";
+import path from "path";
 import fs from "fs";
 
 // Environment Variables
@@ -15,7 +16,7 @@ const useManagedIdentities = process.env.USE_MANAGED_IDENTITIES === "true";
 // Service Setup
 //////////////////////////////////////////////////
 applicationinsights
-  .setup(process.env.APPLICATION_INSIGHTS_CONNECTION_STRING)
+  .setup(process.env.APPLICATIONINSIGHTS_CONNECTION_STRING)
   .setDistributedTracingMode(
     applicationinsights.DistributedTracingModes.AI_AND_W3C
   )
@@ -29,14 +30,15 @@ const postgresIdentityService = new IdentityService({
   clientId: process.env.POSTGRES_USER_MANAGED_IDENTITY_CLIENTID,
   scope: "https://ossrdbms-aad.database.windows.net/.default",
 });
+const postgresUserName = useManagedIdentities
+  ? process.env.POSTGRES_USER_MANAGED_IDENTITY_USERNAME
+  : process.env.ENTRA_USER_EMAIL;
 const postgresService = new PostgresService({
   identityService: postgresIdentityService,
   host: process.env.POSTGRES_SERVER,
   databaseName: process.env.POSTGRES_DATABASE_NAME,
   port: Number(process.env.POSTGRES_SERVER_PORT),
-  username: useManagedIdentities
-    ? process.env.POSTGRES_USER_MANAGED_IDENTITY_USERNAME
-    : process.env.ENTRA_USER_EMAIL,
+  username: postgresUserName,
 });
 
 const redisIdentityService = new IdentityService({
@@ -56,9 +58,16 @@ const redisService = new RedisService({
 
 // Ensure the database has the tables created
 //////////////////////////////////////////////////
+
+// NOTE: this should be done as part of a database deployment process
+// Attempting to create a new user that will own the database tables and a table for sample data
 const createTables = async () => {
   const response = await postgresService.executeQuery([
-    `CREATE TABLE IF NOT EXISTS dataentries (id SERIAL PRIMARY KEY, text VARCHAR(1024) not null, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)`,
+    `DO $do$ BEGIN IF (SELECT COUNT(*) FROM pg_roles WHERE rolname = 'webapp_admin') = 0 THEN CREATE ROLE webapp_admin WITH NOLOGIN ADMIN azure_pg_admin; END IF; END $do$;`,
+    `GRANT ALL PRIVILEGES ON SCHEMA public TO "webapp_admin";`,
+    `GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "webapp_admin";`,
+    `CREATE TABLE IF NOT EXISTS dataentries (id SERIAL PRIMARY KEY, text VARCHAR(1024) not null, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);`,
+    `ALTER TABLE dataentries OWNER TO webapp_admin;`,
   ]);
 
   console.log(response);
@@ -71,24 +80,19 @@ await createTables();
 const app = express();
 const port = expressPort;
 
+// Setup middleware
 app.use(express.json());
+app.use(express.static("public"));
 
+// Configure routes
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
 
-app.get("/", (req, res, next) => {
-  appInsightsClient.trackEvent({ name: "Home Page Hit" });
-  // this is very inefficient, but it's just for demo purposes
-  const indexHtmlFile = fs.readFileSync(
-    process.cwd() + "/public/index.html",
-    "utf-8"
+app.get("/appinsights-connectionstring.js", (req, res, next) => {
+  res.send(
+    `window.applicationinsights_connection_string = "${process.env.APPLICATIONINSIGHTS_CONNECTION_STRING}";`
   );
-  const modifiedIndexHtmlFile = indexHtmlFile.replace(
-    "$APPLICATIONINSIGHTS_CONNECTION_STRING",
-    process.env.APPLICATIONINSIGHTS_CONNECTION_STRING
-  );
-  res.send(modifiedIndexHtmlFile);
 });
 
 app.post("/api/dataentries", async (req, res, next) => {

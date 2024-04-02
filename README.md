@@ -8,6 +8,7 @@ to demonstrate how an application would utilize infrastructure that has private
 networking and user-managed identities defined across the entire application.
 
 **Table of Contents**
+
 - [node-redis-postgres-azure-app](#node-redis-postgres-azure-app)
   - [Local Development](#local-development)
     - [Connecting to Private Azure Resources](#connecting-to-private-azure-resources)
@@ -18,6 +19,7 @@ networking and user-managed identities defined across the entire application.
       - [Can't Connect to Postgres](#cant-connect-to-postgres)
   - [Running in Azure](#running-in-azure)
   - [Integrating with Your Own Project](#integrating-with-your-own-project)
+  - [Security Considerations](#security-considerations)
 
 ## Local Development
 
@@ -96,7 +98,7 @@ source .env
 
 # Get a token from AZ CLI
 AZ_USER=$(az ad signed-in-user show --query id --output tsv)
-ACCESS_TOKEN=$(az ad signed-in-user show --query accessToken --output tsv --scope "https://redis.azure.com/.default")
+ACCESS_TOKEN=$(az account get-access-token --query accessToken --output tsv --scope "https://redis.azure.com/.default")
 
 # Connect to the cache through the tunnel
 redis-cli -u "redis://$REDIS_SERVER:$REDIS_SERVER_PORT" --user "$AZ_USER" --pass "$ACCESS_TOKEN" --tls
@@ -165,3 +167,15 @@ the use of `ManagedIdentityCredential` and `AzureCliCredential` from the
 
 If you're not using Node.js, most Microsoft SDKs have a similar credential
 system that can be used to get tokens for connecting to Azure resources.
+
+## Security Considerations
+
+It may seem at first that this is a security risk to have local access to Azure
+resources, however it is important to keep in mind that through every hop in
+this process that identities, policies, and network rules are being validated
+along the way.
+
+For more advanced configurations and security considerations, see the following
+document that outlines how to create a multilayered just-in-time configuration
+for your Azure resources:
+[Multilayered protection for Azure virtual machine access](https://learn.microsoft.com/en-us/azure/architecture/solution-ideas/articles/multilayered-protection-azure-vm)
