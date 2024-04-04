@@ -82,7 +82,31 @@
           </tbody>
         </table>
       </div>
+
+      <div
+        class="relative overflow-x-auto mb-5 bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+      >
+        <h1>Data from Storage</h1>
+
+        <table
+          id="imagesTable"
+          class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400"
+        >
+          <thead
+            class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400"
+          >
+            <tr>
+              <th scope="col" class="px-6 py-3">Name</th>
+              <th scope="col" class="px-6 py-3">Image</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Table rows will be dynamically populated using JavaScript -->
+          </tbody>
+        </table>
+      </div>
     </div>
+
     <script>
       // JavaScript code to update the table after form submission
       document
@@ -157,6 +181,33 @@
                 var newRow = cacheTableBody.insertRow();
                 newRow.insertCell().textContent = row.key;
                 newRow.insertCell().textContent = row.value;
+              });
+            } else {
+              var newRow = tableBody.insertRow();
+              var cell = newRow.insertCell();
+              cell.textContent = "No cache data to display.";
+              cell.colSpan = 3;
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+
+        fetch("/api/images")
+          .then((response) => response.json())
+          .then((data) => {
+            var cacheTableBody = document
+              .getElementById("imagesTable")
+              .getElementsByTagName("tbody")[0];
+            cacheTableBody.innerHTML = ""; // Clear existing table rows
+
+            // Add new table rows with the retrieved data
+            if (!!data && data.length > 0) {
+              data.forEach(function (row) {
+                var newRow = cacheTableBody.insertRow();
+                newRow.insertCell().textContent = row.name;
+                newRow.insertCell().innerHTML =
+                  "<img src='" + row.url + "' class='w-1/2' />";
               });
             } else {
               var newRow = tableBody.insertRow();

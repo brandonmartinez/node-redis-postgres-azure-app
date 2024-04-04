@@ -33,6 +33,7 @@ const storageService = new StorageService({
   identityService: storageIdentityService,
   accountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,
   containerName: process.env.AZURE_STORAGE_ACCOUNT_CONTAINER_NAME,
+  publicBaseUrl: process.env.IMAGES_BASE_URL
 });
 
 const postgresIdentityService = new IdentityService({

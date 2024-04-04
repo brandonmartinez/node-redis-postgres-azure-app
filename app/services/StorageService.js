@@ -15,6 +15,7 @@ class StorageService {
     );
 
     this.containerName = options.containerName;
+    this.publicBaseUrl = options.publicBaseUrl;
   }
 
   async getImages() {
@@ -25,11 +26,9 @@ class StorageService {
     const images = [];
 
     for await (const blob of containerClient.listBlobsFlat()) {
-      const blockBlobClient = containerClient.getBlockBlobClient(blob.name);
-
       images.push({
         name: blob.name,
-        url: blockBlobClient.url,
+        url: this.publicBaseUrl + blob.name,
       });
     }
 
