@@ -26,7 +26,8 @@ const appInsightsClient = applicationinsights.defaultClient;
 
 const storageIdentityService = new IdentityService({
   useManagedIdentities,
-  clientId: process.env.POSTGRES_USER_MANAGED_IDENTITY_CLIENTID,
+  clientId: process.env.AZURE_STORAGE_ACCOUNT_MANAGED_IDENTITY_CLIENTID,
+  scope: "https://storage.azure.com/.default",
 });
 const storageService = new StorageService({
   identityService: storageIdentityService,
