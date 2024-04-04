@@ -3,10 +3,9 @@
 import IdentityService from "./services/IdentityService.js";
 import RedisService from "./services/RedisService.js";
 import PostgresService from "./services/PostgresService.js";
+import StorageService from "./services/StorageService.js";
 import express from "express";
 import applicationinsights from "applicationinsights";
-import path from "path";
-import fs from "fs";
 
 // Environment Variables
 //////////////////////////////////////////////////
@@ -24,6 +23,16 @@ applicationinsights
   .setInternalLogging(true, true)
   .start();
 const appInsightsClient = applicationinsights.defaultClient;
+
+const storageIdentityService = new IdentityService({
+  useManagedIdentities,
+  clientId: process.env.POSTGRES_USER_MANAGED_IDENTITY_CLIENTID,
+});
+const storageService = new StorageService({
+  identityService: storageIdentityService,
+  accountName: process.env.AZURE_STORAGE_ACCOUNT_NAME,
+  containerName: process.env.AZURE_STORAGE_ACCOUNT_CONTAINER_NAME,
+});
 
 const postgresIdentityService = new IdentityService({
   useManagedIdentities,
@@ -179,6 +188,24 @@ app.get("/api/cache/:id", async (req, res, next) => {
     });
     const id = req.params.id;
     const response = await redisService.get(`dataentries-${id}`);
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error(error);
+    appInsightsClient.trackException({
+      exception: error,
+    });
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/api/images", async (req, res, next) => {
+  try {
+    appInsightsClient.trackEvent({
+      name: "Storage Account Images Requested",
+    });
+    const id = req.params.id;
+    const response = await storageService.getImages();
 
     res.status(200).json(response);
   } catch (error) {

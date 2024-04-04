@@ -8,6 +8,7 @@ set -a
 LOG_FILE_NAME="serve.log"
 # Uncomment the following line to enable verbose logging from Azure SDKs
 # AZURE_LOG_LEVEL=verbose
+# Using a proxy for better Azure API compatability
 
 source ./logging.sh
 

@@ -58,6 +58,11 @@ if [ ! -f "$SSH_COMPLETE_FILE" ]; then
         ssh-keygen -t rsa -b 4096 -C "$AZURE_JUMPBOX_USERNAME@$LOCAL_BASTION_SSH_TUNNEL_ADDRESS" -f $SSH_PRIVATE_KEY_PATH -N ""
     fi
 
+    info "Removing known_hosts file in case the server changed"
+    if [ -f "/home/node/.ssh/known_hosts" ]; then
+        rm /home/node/.ssh/known_hosts
+    fi
+
     info "Sending to Jumpbox"
     ssh-copy-id -p $LOCAL_BASTION_SSH_TUNNEL_PORT -i $SSH_PUBLIC_KEY_PATH $AZURE_JUMPBOX_USERNAME@127.0.0.1
 
@@ -75,6 +80,7 @@ info "Creating local ports to Postgres server $AZURE_POSTGRES_SERVER and Redis s
 $(ssh -o ExitOnForwardFailure=yes -4 -i $SSH_PRIVATE_KEY_PATH \
     -L $POSTGRESS_PORT:$AZURE_POSTGRES_SERVER:$POSTGRESS_PORT \
     -L $REDIS_PORT:$AZURE_REDIS_SERVER:$REDIS_PORT \
+    -D 8080 -C \
     -N \
     $LOCAL_BASTION_SSH_TUNNEL_ADDRESS -p $LOCAL_BASTION_SSH_TUNNEL_PORT  -l $AZURE_JUMPBOX_USERNAME) &
 

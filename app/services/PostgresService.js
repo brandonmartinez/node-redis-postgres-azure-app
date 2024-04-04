@@ -1,6 +1,5 @@
 // Imports
 //////////////////////////////////////////////////
-import IdentityService from "./IdentityService.js";
 import pg from "pg";
 
 // needed for commonjs modules

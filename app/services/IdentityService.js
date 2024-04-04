@@ -16,6 +16,10 @@ class IdentityService {
     this.scope = options.scope;
   }
 
+  getCredential() {
+    return this.credential;
+  }
+
   async getToken() {
     try {
       // Acquire the access token.

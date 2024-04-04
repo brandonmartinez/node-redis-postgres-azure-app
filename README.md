@@ -12,6 +12,7 @@ networking and user-managed identities defined across the entire application.
 - [node-redis-postgres-azure-app](#node-redis-postgres-azure-app)
   - [Local Development](#local-development)
     - [Connecting to Private Azure Resources](#connecting-to-private-azure-resources)
+      - [Azure Storage](#azure-storage)
       - [PostgreSQL](#postgresql)
       - [Redis](#redis)
     - [Gotchas](#gotchas)
@@ -64,6 +65,24 @@ The Dev Container has the CLI tooling already installed for you to test
 connections to Postgres and Redis. However, before you can connect you'll need
 to get a token scoped to each of those resources. This also assumes you have the
 `./tunnels.sh` script running in another shell session.
+
+Additionally, `az` CLI is also installed and can be configured to run all
+commands through the Virtual Machine Jumpbox. To do so, set the following
+environment variable before running any `az` commands:
+
+```sh
+ALL_PROXY=socks5h://127.0.0.1:8080
+```
+
+This will route all `az` commands through the SSH tunnel to the Jumpbox. An
+example script is included that will upload images to the configured storage
+account.
+
+#### Azure Storage
+
+Utilizing the `upload.sh` script, you can upload images in the `./images`
+directory to the configured Azure Storage account. This will open a SOCKSv5
+proxy to the Jumpbox and upload the images using the `az` CLI.
 
 #### PostgreSQL
 

@@ -133,3 +133,4 @@ dist
 .logs/
 .ssh/
 .env
+.DS_Store
